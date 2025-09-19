@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Symptom Checker - AI Healthcare</title>
+
+  <style>
+    /* Page + centering */
+    :root {
+      --card-width: 460px;
+      --accent: #2aa7d1;
+      --green: #28a745;
+    }
+    html,body{
+      height:100%;
+      margin:0;
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      background: linear-gradient(135deg,#b2f2ff 0%, #c3f0e8 50%, #e6f9ff 100%);
+      -webkit-font-smoothing:antialiased;
+    }
+    .page {
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+
+    /* Card */
+    .card {
+      width: min(var(--card-width), 96%);
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 8px 30px rgba(8,30,50,0.12);
+      padding: 22px;
+      box-sizing: border-box;
+    }
+    .card h1 {
+      margin:0 0 10px 0;
+      font-size:18px;
+      color:#0b3b4a;
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+    .card p.lead {
+      margin:6px 0 18px 0;
+      color:#43585f;
+      font-size:13px;
+    }
+
+    /* Form rows */
+    .row {
+      margin-bottom:12px;
+    }
+    label {
+      display:block;
+      font-size:13px;
+      color:#334b50;
+      margin-bottom:6px;
+    }
+    select,
+    button {
+      width:100%;
+      padding:10px 12px;
+      font-size:14px;
+      border-radius:8px;
+      border:1px solid #cfd8d9;
+      box-sizing:border-box;
+    }
+    select:focus, button:focus { outline: 3px solid rgba(42,167,209,0.12); }
+
+    /* button */
+    button {
+      background: linear-gradient(180deg,var(--green) 0%, #1f8c3a 100%);
+      color:#fff;
+      font-weight:600;
+      border: none;
+      cursor: pointer;
+      margin-top:6px;
+    }
+    button:active { transform: translateY(1px); }
+
+    /* Result box */
+    #result {
+      margin-top:16px;
+      padding:14px;
+      border-radius:10px;
+      background:#fbfbfb;
+      border:1px solid #e6eef0;
+      color:#12343a;
+      min-height:54px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      font-size:14px;
+    }
+    .msg { font-weight:700; }
+    .solution { color:#274a4e; font-weight:500; }
+    .warning { color:#b02a2a; font-weight:700; }
+
+    .disclaimer {
+      margin-top:12px;
+      font-size:12px;
+      color:#6b7d80;
+    }
+
+    /* small screens */
+    @media (max-width:420px){
+      .card { padding:16px; border-radius:12px; }
+      h1{ font-size:16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <main class="card" role="main" aria-labelledby="pageTitle">
+      <h1 id="pageTitle">🩺 Symptom Checker — (English / தமிழ் / हिन्दी)</h1>
+      <p class="lead">Select a symptom and language, then press <strong>Check</strong>. (This is informational — not a substitute for professional medical advice.)</p>
+
+      <div class="row">
+        <label for="symptom">-- Select Your Problem --</label>
+        <select id="symptom" aria-label="Symptom">
+          <option value="">-- Select Your Problem --</option>
+          <option value="chest">Chest Pain (மார்பு வலி / सीने में दर्द)</option>
+          <option value="headache">Headache (தலைவலி / सिरदर्द)</option>
+          <option value="breathing">Difficulty Breathing (சுவாசிக்க சிரமம் / सांस लेने में कठिनाई)</option>
+          <option value="unconscious">Unconscious (மயக்கம் / बेहोशी)</option>
+          <option value="fever">Fever (காய்ச்சல் / बुखार)</option>
+          <option value="nausea">Nausea (வாந்தி / मिचली)</option>
+          <option value="abdominal">Abdominal Pain (வயிற்று வலி / पेट दर्द)</option>
+          <option value="backpain">Back Pain (முதுகு வலி / पीठ दर्द)</option>
+          <option value="cough">Cough (இருமல் / खाँसी)</option>
+          <option value="diarrhea">Diarrhea (வயிற்றுப்போக்கு / दस्त)</option>
+          <option value="bleeding">Severe Bleeding (கடுமையான இரத்தக் கசிவு / गंभीर रक्तस्राव)</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <label for="language">Language</label>
+        <select id="language" aria-label="Language">
+          <option value="english">English</option>
+          <option value="tamil">தமிழ்</option>
+          <option value="hindi">हिंदी</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <button id="checkBtn" type="button">Check</button>
+      </div>
+
+      <div id="result" aria-live="polite">
+        <div class="msg">Select a symptom and click <strong>Check</strong> to see recommendation.</div>
+      </div>
+
+      <div class="disclaimer">
+        ⚠️ This tool provides general guidance only. For emergencies, call your local emergency number or seek immediate medical care.
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Responses: [message, solution]
+    const responses = {
+      english: {
+        chest: ["⚠️ Chest pain may be serious. Seek medical help immediately.", "Solution: Go to the nearest emergency department; avoid physical exertion."],
+        headache: ["💡 Headache: rest and hydrate. See a doctor if severe or sudden.", "Solution: Drink water, rest in a dark room, consider OTC pain relief if suitable."],
+        breathing: ["⚠️ Difficulty breathing is critical. Call emergency services immediately.", "Solution: Sit upright, loosen tight clothing; use rescue inhaler if prescribed and call for help."],
+        unconscious: ["⚠️ Unconsciousness is an emergency. Seek immediate medical care.", "Solution: Call emergency, place person on their side if breathing and check airway."],
+        fever: ["🌡️ Fever: rest and fluids. Seek care if high fever or persistent symptoms.", "Solution: Stay hydrated, use fever-reducing meds as recommended, see a doctor if >48 hrs."],
+        nausea: ["🤢 Nausea: rest and small sips of clear fluid.", "Solution: Try ginger tea or lemon water, avoid heavy/oily foods."],
+        abdominal: ["🩺 Abdominal pain may have many causes; seek care if severe.", "Solution: Avoid solid food if severe pain, see medical professional if pain persists or severe."],
+        backpain: ["🧍 Back pain: rest, gentle stretches; seek care if weakness or numbness.", "Solution: Apply heat, avoid heavy lifting, consult a doctor if pain radiates or is severe."],
+        cough: ["🤧 Cough: hydrate and rest; see doctor if persistent or severe.", "Solution: Steam inhalation, warm fluids, honey (if over 1 year), consult if >1 week."],
+        diarrhea: ["💧 Diarrhea: keep hydrated and consider ORS; seek care if dehydrated.", "Solution: Drink ORS/clear fluids, eat bland foods, seek care if severe."],
+        bleeding: ["🚨 Severe bleeding — emergency. Apply pressure and seek immediate care.", "Solution: Apply firm pressure, elevate if possible, call emergency services immediately."]
+      },
+      tamil: {
+        chest: ["⚠️ மார்பு வலி மிகவும் ஆபத்தானது. உடனே மருத்துவ உதவி பெறவும்.", "தீர்வு: உடனே அருகிலுள்ள மருத்துவமனைக்கு செல்லவும்; அதிக சக்தி பயன்படுத்தாதீர்கள்."],
+        headache: ["💡 தலைவலி: ஓய்வு எடுத்து நீர்பிடிக்கவும். கடுமையாக இருந்தால் மருத்துவரை அணுகவும்.", "தீர்வு: தண்ணீர் குடிக்கவும், இருண்ட இடத்தில் ஓய்வு எடுக்கவும், தேவையெனில் OTC மருந்து."],
+        breathing: ["⚠️ சுவாசிக்கை சிரமம் கடுமையாக உள்ளது. உடனடியாக அவசர சேவையை அழைக்கவும்.", "தீர்வு: நேராக உட்காரவும், இறுக்கமான துணிகளை நீக்கவும்; மருத்துவ உதவியை அழைக்கவும்."],
+        unconscious: ["⚠️ மயக்கம் அவசர சிகிச்சை தேவை.", "தீர்வு: நபரை நல்ல நிலைபடுத்தி, மூச்சு இருப்பினில் பக்கமாக வைத்து உடனே உதவியை அழைக்கவும்."],
+        fever: ["🌡️ காய்ச்சல்: ஓய்வு மற்றும் திரவம் எடுத்துக் கொள்ளவும்.", "தீர்வு: தண்ணீர் அதிகம் குடிக்கவும், நீண்டகாலம் இருந்தால் மருத்துவரை அணுகவும்."],
+        nausea: ["🤢 வாந்தி: சிறு சிறு நீர்கள் குடிக்கவும்.", "தீர்வு: இஞ்சி டீ, எலுமிச்சை நீர் முயற்சிக்கவும்."],
+        abdominal: ["🩺 வயிற்று வலி: பல காரணங்கள் இருக்கலாம்; கடுமையாக இருந்தால் மருத்துவரை பார்க்கவும்.", "தீர்வு: எளிதான உணவுகளை சாப்பிடவும், கார உணவுகளை தவிர்க்கவும்."],
+        backpain: ["🧍 முதுகு வலி: மெதுவான நீட்டிப்புகள் மற்றும் சூடு பாவிக்கவும்.", "தீர்வு: உட்காரும் போதும் நிலையை சரி செய்யவும்; கனமான பொருட்களை தூக்க வேண்டாம்."],
+        cough: ["🤧 இருமல்: நீர் குடிக்கவும் மற்றும் ஓய்வெடுக்கவும்; நீடித்தால் மருத்துவரை அணுகவும்.", "தீர்வு: தேன் கலந்து வெந்நீர், வாலியாப்பு (steam) தேர்வு."],
+        diarrhea: ["💧 வயிற்றுப்போக்கு: ORS குடிக்கவும்; தண்ணீர் இழப்பு அதிகமா என்றால் மருத்துவரை அணுகவும்.", "தீர்வு: ORS, வறண்ட உணவுகள் (அரிசி, வாழைப்பழம்) பரிந்துரைக்கப்படுகிறது."],
+        bleeding: ["🚨 கடுமையான இரத்தசுரப்பு – உடனடி அவசர சிகிச்சை தேவை.", "தீர்வு: காயத்திற்கு அழுத்தம் வைக்கவும், உடனே மருத்துவமனை செல்லுங்கள்."]
+      },
+      hindi: {
+        chest: ["⚠️ सीने में दर्द गंभीर हो सकता है। तुरंत चिकित्सा सहायता लें।", "समाधान: तुरंत अस्पताल जाएं, भारी कार्य न करें।"],
+        headache: ["💡 सिरदर्द: आराम करें और पानी पिएं। अधिक होने पर डॉक्टर को दिखाएँ।", "समाधान: पानी पिएं, आराम करें; आवश्यक हो तो OTC दर्द निवारक।"],
+        breathing: ["⚠️ सांस लेने में कठिनाई गंभीर है। तुरंत आपातकालीन सेवा को कॉल करें।", "समाधान: सीधा बैठें, तंग कपड़े खोलें; यदि इनहेलर दिया गया है तो उपयोग करें और मदद बुलाएँ।"],
+        unconscious: ["⚠️ बेहोशी आपातकालीन स्थिति है। तुरंत चिकित्सा सहायता लें।", "समाधान: व्यक्ति को समानांतर करवट पर रखें यदि वे साँस ले रहे हैं और एम्बुलेंस बुलाएँ।"],
+        fever: ["🌡️ बुखार: आराम करें और तरल पदार्थ लें। लम्बे समय तक रहे तो डॉक्टर से मिलें।", "समाधान: हाइड्रेटेड रहें, आवश्यकता अनुसार बुखार कम करने की दवा लें।"],
+        nausea: ["🤢 मतली: हल्की मात्रा में पानी पिएं और आराम करें।", "समाधान: अदरक की चाय या नींबू पानी का उपयोग करें।"],
+        abdominal: ["🩺 पेट दर्द: गंभीर होने पर डॉक्टर से मिलें।", "समाधान: हल्का भोजन लें और मसालेदार भोजन से बचें।"],
+        backpain: ["🧍 पीठ दर्द: हल्के व्यायाम और गर्म सिकाई कर सकते हैं।", "समाधान: सही मुद्रा अपनाएँ; भारी वस्तु न उठाएँ।"],
+        cough: ["🤧 खाँसी: पानी पिएं और आराम करें; एक सप्ताह से अधिक रहे तो डॉक्टर को दिखाएँ।", "समाधान: गुनगुना पानी/शहद लें और भाप लें।"],
+        diarrhea: ["💧 दस्त: ORS लें और हाइड्रेटेड रहें; आवश्यकता होने पर डॉक्टर को दिखाएँ।", "समाधान: केला/चावल खाएँ, ORS का सेवन करें।"],
+        bleeding: ["🚨 गंभीर रक्तस्राव — तुरंत आपातकालीन सहायता लें।", "समाधान: घाव पर दबाव बनाकर रखें और तुरंत अस्पताल जाएँ।"]
+      }
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const symptomEl = document.getElementById('symptom');
+      const langEl = document.getElementById('language');
+      const btn = document.getElementById('checkBtn');
+      const resultEl = document.getElementById('result');
+
+      function renderMessage(msg, sol, isWarning) {
+        resultEl.innerHTML = "";
+        const m = document.createElement('div');
+        m.className = 'msg';
+        if (isWarning) m.classList.add('warning');
+        m.textContent = msg;
+
+        const s = document.createElement('div');
+        s.className = 'solution';
+        s.textContent = sol;
+
+        resultEl.appendChild(m);
+        resultEl.appendChild(s);
+      }
+
+      btn.addEventListener('click', () => {
+        const symptom = symptomEl.value;
+        const lang = langEl.value || 'english';
+
+        // validation
+        if (!symptom) {
+          resultEl.innerHTML = "";
+          const err = document.createElement('div');
+          err.className = 'warning';
+          err.textContent = '⚠️ Please select a symptom from the list.';
+          resultEl.appendChild(err);
+          return;
+        }
+
+        // get response pair
+        const pair = (responses[lang] && responses[lang][symptom]) ? responses[lang][symptom] : null;
+        if (!pair) {
+          renderMessage("ℹ️ No information found for that symptom in selected language.", "Please try another language or symptom.");
+          return;
+        }
+
+        // show results; treat chest/breathing/unconscious/bleeding as warnings
+        const warningSymptoms = new Set(['chest','breathing','unconscious','bleeding']);
+        const isWarning = warningSymptoms.has(symptom);
+        renderMessage(pair[0], pair[1], isWarning);
+      });
+
+      // allow Enter key on selects to trigger check
+      [symptomEl, langEl].forEach(el => {
+        el.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') btn.click();
+        });
+      });
+    });
+  </script>
+</body>
+</html>
